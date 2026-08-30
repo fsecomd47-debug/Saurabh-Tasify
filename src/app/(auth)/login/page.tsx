@@ -4,7 +4,13 @@ import React, { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, ChevronRight } from "lucide-react";
-import { authClient } from "@/lib/auth/client";
+import { httpClient, ApiRequestError } from "@/types/api";
+
+const FRIENDLY: Record<string, string> = {
+  INVALID_CREDENTIALS: "Incorrect email or password.",
+  RATE_LIMITED: "Too many attempts. Take a breath and try again shortly.",
+  NETWORK_FAILURE: "You appear to be offline. Check your connection.",
+};
 
 function LoginForm() {
   const router = useRouter();
@@ -27,26 +33,14 @@ function LoginForm() {
     setError(null);
     setLoading(true);
     try {
-      const { error: signInError } = await authClient.signIn.email({
-        email: email.trim(),
-        password,
-      });
-
-      if (signInError) {
-        setError(signInError.message || "Incorrect email or password.");
-        return;
-      }
-
-      // Sync user to local DB for game features
-      try {
-        await fetch("/api/auth/kinde-sync", { method: "POST" });
-      } catch {
-        // Non-critical — session is already set
-      }
-
+      await httpClient.post("/api/auth/login", { email: email.trim(), password });
       router.replace(nextPath.startsWith("/") ? nextPath : "/home");
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      if (err instanceof ApiRequestError) {
+        setError(FRIENDLY[err.code] ?? err.message);
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

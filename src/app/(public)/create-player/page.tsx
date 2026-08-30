@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowLeft, Eye, EyeOff, Check, X, Loader2 } from "lucide-react";
 import { useGuestStore } from "@/store/guest-store";
 import { ProfileCard } from "@/components/ui/profile-card-1";
-import { authClient } from "@/lib/auth/client";
+import { httpClient, ApiRequestError } from "@/types/api";
 
 const SF = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
 
@@ -393,60 +393,41 @@ function AuthStep({
 
     try {
       if (tab === "signup") {
-        const { error: signUpError } = await authClient.signUp.email({
+        const res = await httpClient.post<{ userId: string }>("/api/auth/register", {
+          displayName: displayName.trim(),
           email: email.trim(),
           password,
-          name: displayName.trim(),
         });
-
-        if (signUpError) {
-          if (signUpError.message?.includes("already")) {
-            setTab("signin");
-            setError("Account already exists. Signing you in instead.");
-            return;
-          }
-          setError(signUpError.message || "Registration failed. Try again.");
-          return;
-        }
-
-        // Sync Neon Auth user to local DB (profiles, wallet, progression, etc.)
-        const syncRes = await fetch("/api/auth/kinde-sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            displayName: displayName.trim(),
-            avatarId: avatarId || "avatar-wolf",
-          }),
-        });
-        if (!syncRes.ok) {
-          console.warn("Sync warning:", await syncRes.text());
-        }
 
         onSuccess();
       } else {
-        const { error: signInError } = await authClient.signIn.email({
+        await httpClient.post("/api/auth/login", {
           email: email.trim(),
           password,
         });
-
-        if (signInError) {
-          setError(signInError.message || "Login failed. Check your credentials.");
-          return;
-        }
 
         onSuccess();
       }
     } catch (err: any) {
       console.error("[auth]", err);
-      const msg = err?.message || err?.error?.message || JSON.stringify(err);
-      if (msg.includes("Invalid") || msg.includes("credentials") || msg.includes("401")) {
-        setError("Incorrect email or password. Please try again.");
-      } else if (msg.includes("not found") || msg.includes("does not exist")) {
-        setError("No account found with this email. Sign up instead.");
-      } else if (msg.includes("rate") || msg.includes("limit") || msg.includes("429")) {
-        setError("Too many attempts. Please wait a moment.");
+      if (err instanceof ApiRequestError) {
+        if (err.code === "ACCOUNT_EXISTS") {
+          setTab("signin");
+          setError("Account already exists. Signing you in instead.");
+          return;
+        }
+        setError(err.message || "Something went wrong. Please try again.");
       } else {
-        setError("Network error. Please try again.");
+        const msg = err?.message || err?.error?.message || JSON.stringify(err);
+        if (msg.includes("Invalid") || msg.includes("credentials") || msg.includes("401")) {
+          setError("Incorrect email or password. Please try again.");
+        } else if (msg.includes("not found") || msg.includes("does not exist")) {
+          setError("No account found with this email. Sign up instead.");
+        } else if (msg.includes("rate") || msg.includes("limit") || msg.includes("429")) {
+          setError("Too many attempts. Please wait a moment.");
+        } else {
+          setError("Network error. Please try again.");
+        }
       }
     } finally {
       setIsLoading(false);

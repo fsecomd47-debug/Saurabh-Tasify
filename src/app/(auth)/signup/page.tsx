@@ -4,8 +4,15 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Sparkles, ChevronRight } from "lucide-react";
-import { authClient } from "@/lib/auth/client";
+import { httpClient, ApiRequestError } from "@/types/api";
 import { PasswordField } from "@/components/auth/PasswordField";
+
+const FRIENDLY: Record<string, string> = {
+  ACCOUNT_EXISTS: "That email already has a player. Try signing in instead.",
+  RATE_LIMITED: "Too many attempts. Take a breath and try again shortly.",
+  NETWORK_FAILURE: "You appear to be offline. Check your connection.",
+  VALIDATION_ERROR: "Double-check your details and try again.",
+};
 
 export default function SignupPage() {
   const router = useRouter();
@@ -23,31 +30,22 @@ export default function SignupPage() {
     setError(null);
     setLoading(true);
     try {
-      const { error: signUpError } = await authClient.signUp.email({
+      const res = await httpClient.post<{ userId: string }>("/api/auth/register", {
+        displayName: displayName.trim(),
         email: email.trim(),
         password,
-        name: displayName.trim(),
       });
-
-      if (signUpError) {
-        if (signUpError.message?.includes("already") || signUpError.message?.includes("exists")) {
-          setError("That email already has a player. Try signing in instead.");
-        } else {
-          setError(signUpError.message || "Something went wrong. Please try again.");
-        }
-        return;
-      }
-
-      // Sync user to local DB for game features
-      try {
-        await fetch("/api/auth/kinde-sync", { method: "POST" });
-      } catch {
-        // Non-critical — session is already set
-      }
-
       router.replace("/home");
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      if (err instanceof ApiRequestError) {
+        if (err.code === "ACCOUNT_EXISTS") {
+          setError(FRIENDLY.ACCOUNT_EXISTS);
+          return;
+        }
+        setError(FRIENDLY[err.code] ?? err.message);
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
