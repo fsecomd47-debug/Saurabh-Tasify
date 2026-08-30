@@ -1,0 +1,44 @@
+name: Bug
+description: Report a reproducible problem
+title: "[BUG] "
+labels:
+  - bug
+
+body:
+  - type: textarea
+    attributes:
+      label: What happened?
+      description: Describe the issue clearly.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Browser/device
+
+  - type: dropdown
+    attributes:
+      label: Severity
+      options:
+        - P0 Critical
+        - P1 Major
+        - P2 Moderate
+        - P3 Minor

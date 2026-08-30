@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+commit_msg=$(cat "$1")
+
+# Conventional commits enforcement
+pattern="^(feat|fix|refactor|perf|security|docs|test|chore|build|ci)(\(.+\))?: .{1,}"
+
+if ! echo "$commit_msg" | grep -qE "$pattern"; then
+  echo ""
+  echo "❌ Invalid commit message format."
+  echo ""
+  echo "Expected: type: description"
+  echo "Types: feat, fix, refactor, perf, security, docs, test, chore, build, ci"
+  echo ""
+  echo "Examples:"
+  echo "  feat: add pet mining system"
+  echo "  fix: prevent duplicate daily reward claims"
+  echo "  security: harden leaderboard authorization"
+  echo ""
+  exit 1
+fi

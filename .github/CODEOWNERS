@@ -1,0 +1,6 @@
+* @SaurabhTask/maintainers
+
+/src/server/ @SaurabhTask/backend
+/src/features/ @SaurabhTask/frontend
+/src/db/ @SaurabhTask/database
+/.github/ @SaurabhTask/devops

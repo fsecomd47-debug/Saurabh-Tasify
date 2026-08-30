@@ -1,0 +1,33 @@
+name: Security Vulnerability
+description: Report a security vulnerability privately
+title: "[SECURITY] "
+labels:
+  - security
+
+body:
+  - type: textarea
+    attributes:
+      label: What is the vulnerability?
+      description: Describe the security issue. Do not include sensitive details in public issues.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Affected area
+      description: Authentication, authorization, economy, camera, AI, social, etc.
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: Severity
+      options:
+        - P0 Critical (auth bypass, data leak, reward exploit)
+        - P1 Major (IDOR, privilege escalation)
+        - P2 Moderate (information disclosure)
+        - P3 Minor (defense-in-depth)
+
+  - type: textarea
+    attributes:
+      label: Steps to reproduce (if safe to share)

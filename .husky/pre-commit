@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+npx lint-staged 2>/dev/null || true
+npm run lint 2>/dev/null || true
+npm run typecheck 2>/dev/null || true

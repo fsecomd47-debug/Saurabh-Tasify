@@ -1,0 +1,52 @@
+name: Security Scan
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+  pull_request:
+    branches:
+      - main
+
+  schedule:
+    - cron: "0 6 * * 1"
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Dependency audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Secret detection
+        run: npm run security:check
+
+      - name: Search for hardcoded secrets
+        run: |
+          echo "Scanning source for leaked credentials..."
+          if grep -rn -I -E "(API_KEY|SECRET|PASSWORD|TOKEN|PRIVATE_KEY)\s*[:=]\s*[\"'][^\"']{8,}" src/ scripts/ --include="*.ts" --include="*.tsx" --include="*.js" --include="*.mjs"; then
+            echo "⚠️ Potential hardcoded secrets found. Review manually."
+            exit 1
+          else
+            echo "✅ No hardcoded secrets detected."
+          fi

@@ -1,0 +1,47 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+title: "[FEATURE] "
+labels:
+  - enhancement
+
+body:
+  - type: textarea
+    attributes:
+      label: What feature do you want?
+      description: Describe the feature clearly.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Why is this valuable?
+      description: How does this improve productivity or the user experience?
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: Area
+      options:
+        - Tasks / Missions
+        - Verification / Camera
+        - AI / Computer Vision
+        - Pets
+        - Quests
+        - Rewards / Economy
+        - Leaderboard
+        - Social
+        - Profile
+        - Settings
+        - Performance
+        - Accessibility
+        - Other
+
+  - type: dropdown
+    attributes:
+      label: Priority
+      options:
+        - P0 Critical
+        - P1 High
+        - P2 Medium
+        - P3 Low
