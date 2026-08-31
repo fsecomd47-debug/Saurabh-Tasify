@@ -1069,3 +1069,193 @@ export const socialReports = pgTable(
     index("social_reports_status_idx").on(t.status),
   ]
 );
+
+/* ──────────────────── PDR-6: THE VAULT ────────────────────── */
+
+export const vaultItemTypeEnum = pgEnum("vault_item_type", [
+  "pet",
+  "car",
+  "superbike",
+  "vehicle",
+  "frame",
+  "title",
+  "badge",
+  "boost",
+  "theme",
+  "accessory",
+  "collectible",
+]);
+
+export const vaultRarityEnum = pgEnum("vault_rarity", [
+  "common",
+  "uncommon",
+  "rare",
+  "epic",
+  "legendary",
+  "mythic",
+]);
+
+export const vaultItemStatusEnum = pgEnum("vault_item_status", [
+  "draft",
+  "active",
+  "retired",
+]);
+
+export const vaultItems = pgTable(
+  "vault_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    type: vaultItemTypeEnum("type").notNull(),
+    rarity: vaultRarityEnum("rarity").notNull(),
+    price: integer("price").notNull(),
+    abilities: jsonb("abilities").$type<Array<{
+      type: string;
+      value: number;
+      stackingGroup: string;
+      maxGroupBonus: number;
+      description: string;
+    }>>(),
+    requirements: jsonb("requirements").$type<Array<{
+      type: string;
+      value: number | string;
+      description: string;
+    }>>(),
+    previewAsset: text("preview_asset").notNull(),
+    thumbnailAsset: text("thumbnail_asset"),
+    collectionId: uuid("collection_id"),
+    status: vaultItemStatusEnum("status").notNull().default("active"),
+    featured: boolean("featured").notNull().default(false),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("vault_items_type_idx").on(t.type),
+    index("vault_items_rarity_idx").on(t.rarity),
+    index("vault_items_status_idx").on(t.status),
+    index("vault_items_price_idx").on(t.price),
+    index("vault_items_featured_idx").on(t.featured),
+    index("vault_items_collection_idx").on(t.collectionId),
+  ]
+);
+
+export const vaultCollections = pgTable(
+  "vault_collections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    itemIds: jsonb("item_ids").$type<string[]>().notNull().default([]),
+    completionReward: jsonb("completion_reward").$type<{
+      badgeId?: string;
+      titleId?: string;
+      frameId?: string;
+    }>(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("vault_collections_name_idx").on(t.name),
+  ]
+);
+
+export const vaultOwnership = pgTable(
+  "vault_ownership",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => vaultItems.id, { onDelete: "cascade" }),
+    quantity: integer("quantity").notNull().default(1),
+    equipped: boolean("equipped").notNull().default(false),
+    favorite: boolean("favorite").notNull().default(false),
+    showcased: boolean("showcased").notNull().default(false),
+    acquiredAt: timestamp("acquired_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("vault_ownership_user_item_idx").on(t.userId, t.itemId),
+    index("vault_ownership_user_idx").on(t.userId),
+    index("vault_ownership_item_idx").on(t.itemId),
+  ]
+);
+
+export const vaultEquipment = pgTable(
+  "vault_equipment",
+  {
+    userId: uuid("user_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    activePet: uuid("active_pet").references(() => vaultItems.id),
+    activeVehicle: uuid("active_vehicle").references(() => vaultItems.id),
+    profileFrame: uuid("profile_frame").references(() => vaultItems.id),
+    profileTitle: uuid("profile_title").references(() => vaultItems.id),
+    profileBadge: uuid("profile_badge").references(() => vaultItems.id),
+    theme: uuid("theme").references(() => vaultItems.id),
+    showcaseItems: jsonb("showcase_items").$type<string[]>().notNull().default([]),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("vault_equipment_user_idx").on(t.userId),
+  ]
+);
+
+export const vaultTransactions = pgTable(
+  "vault_transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => vaultItems.id, { onDelete: "cascade" }),
+    price: integer("price").notNull(),
+    operationKey: text("operation_key").notNull(),
+    purchasedAt: timestamp("purchased_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("vault_transactions_operation_key_idx").on(t.operationKey),
+    index("vault_transactions_user_idx").on(t.userId),
+    index("vault_transactions_item_idx").on(t.itemId),
+    index("vault_transactions_date_idx").on(t.purchasedAt),
+  ]
+);
+
+export const vaultWishlist = pgTable(
+  "vault_wishlist",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => vaultItems.id, { onDelete: "cascade" }),
+    addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("vault_wishlist_user_item_idx").on(t.userId, t.itemId),
+    index("vault_wishlist_user_idx").on(t.userId),
+  ]
+);
+
+export const vaultGoals = pgTable(
+  "vault_goals",
+  {
+    userId: uuid("user_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => vaultItems.id, { onDelete: "cascade" }),
+    setAt: timestamp("set_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("vault_goals_user_idx").on(t.userId),
+    index("vault_goals_item_idx").on(t.itemId),
+  ]
+);
