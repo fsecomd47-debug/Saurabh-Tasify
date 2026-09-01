@@ -19,12 +19,20 @@ import {
   type RepEvent,
 } from "./enhanced-rep-counter";
 
-const WASM_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm";
-const MODEL_URL =
-  "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/pose_landmarker_lite.task";
+/* WASM + model URLs — CDN with retry to local fallback */
+const WASM_URLS = [
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm",
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.0/wasm",
+  "https://unpkg.com/@mediapipe/tasks-vision@1.0.1/wasm",
+];
+const MODEL_URLS = [
+  "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/pose_landmarker_lite.task",
+  "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float32/pose_landmarker_lite.task",
+];
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 1500;
+const MAX_RETRIES = 4;
+const RETRY_DELAY_MS = 1000;
+const LOAD_TIMEOUT_MS = 25000;
 
 export type PoseRuntimeStatus =
   | "unloaded"
@@ -51,37 +59,77 @@ export type PoseRuntimeCallbacks = {
 let cachedLandmarker: PoseLandmarker | null = null;
 let loadPromise: Promise<PoseLandmarker> | null = null;
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    promise.then(
+      (val) => { clearTimeout(timer); resolve(val); },
+      (err) => { clearTimeout(timer); reject(err); }
+    );
+  });
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
 export async function loadPoseModel(): Promise<PoseLandmarker> {
   if (cachedLandmarker) return cachedLandmarker;
   if (loadPromise) return loadPromise;
 
   loadPromise = (async () => {
     let lastErr: unknown;
+
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      const wasmIdx = Math.min(attempt - 1, WASM_URLS.length - 1);
+      const modelIdx = Math.min(Math.floor((attempt - 1) / 2), MODEL_URLS.length - 1);
+      const wasmUrl = WASM_URLS[wasmIdx];
+      const modelUrl = MODEL_URLS[modelIdx];
+
       for (const delegate of ["GPU", "CPU"] as const) {
         try {
-          const fileset = await FilesetResolver.forVisionTasks(WASM_BASE);
-          const landmarker = await PoseLandmarker.createFromOptions(fileset, {
-            baseOptions: { modelAssetPath: MODEL_URL, delegate },
-            runningMode: "VIDEO",
-            numPoses: 1,
-            minPoseDetectionConfidence: 0.5,
-            minPosePresenceConfidence: 0.5,
-            minTrackingConfidence: 0.5,
-          });
+          console.log(`[pose-runtime] Attempt ${attempt}/${MAX_RETRIES}: loading WASM from ${wasmUrl} (${delegate})`);
+
+          const fileset = await withTimeout(
+            FilesetResolver.forVisionTasks(wasmUrl),
+            LOAD_TIMEOUT_MS,
+            "WASM load"
+          );
+
+          console.log(`[pose-runtime] WASM loaded, loading model from ${modelUrl}`);
+
+          const landmarker = await withTimeout(
+            PoseLandmarker.createFromOptions(fileset, {
+              baseOptions: { modelAssetPath: modelUrl, delegate },
+              runningMode: "VIDEO",
+              numPoses: 1,
+              minPoseDetectionConfidence: 0.5,
+              minPosePresenceConfidence: 0.5,
+              minTrackingConfidence: 0.5,
+            }),
+            LOAD_TIMEOUT_MS,
+            "Model init"
+          );
+
           cachedLandmarker = landmarker;
-          console.log(`[pose-runtime] Model loaded with ${delegate} delegate`);
+          console.log(`[pose-runtime] Model loaded successfully with ${delegate} delegate`);
           return landmarker;
         } catch (err) {
           lastErr = err;
-          console.warn(`[pose-runtime] Model load attempt ${attempt}/${MAX_RETRIES} (${delegate}) failed:`, err);
+          const msg = err instanceof Error ? err.message : String(err);
+          console.warn(`[pose-runtime] Attempt ${attempt}/${MAX_RETRIES} (${delegate}) failed: ${msg}`);
         }
       }
+
       if (attempt < MAX_RETRIES) {
-        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * attempt));
+        const backoff = RETRY_DELAY_MS * attempt;
+        console.log(`[pose-runtime] Retrying in ${backoff}ms...`);
+        await delay(backoff);
       }
     }
-    throw lastErr;
+
+    const finalMsg = lastErr instanceof Error ? lastErr.message : String(lastErr);
+    throw new Error(`Pose model failed to load after ${MAX_RETRIES} attempts: ${finalMsg}`);
   })();
 
   try {

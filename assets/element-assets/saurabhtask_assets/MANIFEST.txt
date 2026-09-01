@@ -1,0 +1,11 @@
+SaurabhTask Premium Asset Pack
+
+frames: 25
+titles: 20
+badges: 20
+boosts: 20
+themes: 15
+accessories: 10
+special: 10
+
+All assets are 512x512 PNGs. Themes are opaque; other categories use transparent backgrounds where possible.

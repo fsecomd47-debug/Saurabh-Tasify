@@ -337,7 +337,7 @@ export function VaultHome({
 
   return (
     <div className="min-h-screen bg-[#F2F2F7] pb-24">
-      {/* Header */}
+      {/* Header + View Tabs — sticky */}
       <div className="sticky top-0 z-40 bg-[#F2F2F7]/80 backdrop-blur-xl border-b border-[#E5E5EA]">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
@@ -416,28 +416,28 @@ export function VaultHome({
             ))}
           </div>
         </div>
-
-        {/* Category tabs (only in browse) */}
-        {viewTab === "browse" && (
-          <div className="px-4 pb-3">
-            <div className="flex flex-wrap gap-2 justify-center">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap transition-all min-w-0 ${
-                    activeCategory === cat.id
-                      ? "bg-[#1C1C1E] text-white shadow-md"
-                      : "bg-white text-[#636366] border border-[#E5E5EA] active:bg-[#F2F2F7]"
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Category tabs — NOT sticky, scrolls with content */}
+      {viewTab === "browse" && (
+        <div className="px-4 py-3">
+          <div className="flex flex-wrap gap-2 justify-center">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap transition-all min-w-0 ${
+                  activeCategory === cat.id
+                    ? "bg-[#1C1C1E] text-white shadow-md"
+                    : "bg-white text-[#636366] border border-[#E5E5EA] active:bg-[#F2F2F7]"
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Hero */}
       {featuredItem && showDynamicSections && (

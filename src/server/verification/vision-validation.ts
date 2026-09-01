@@ -147,10 +147,10 @@ export function documentSignalPlausible(signal: DocumentSignal): boolean {
 
 export function documentConfidence(signal: DocumentSignal, qualityScore: number): number {
   if (!documentSignalPlausible(signal)) return 0;
-  if (signal.textLength < 20) return 0.25;
-  const lengthScore = Math.min(1, signal.textLength / 400);
+  const lengthScore = Math.min(1, signal.textLength / 200);
   const fieldScore = Math.min(1, signal.fieldCount / 3);
-  return (0.35 + lengthScore * 0.3 + fieldScore * 0.25) * (0.75 + Math.min(qualityScore, 1) * 0.25);
+  const base = 0.40 + lengthScore * 0.30 + fieldScore * 0.20;
+  return Math.min(0.95, base * (0.75 + Math.min(qualityScore, 1) * 0.25));
 }
 
 /* ─────────────────── Unified entry ─────────────────── */

@@ -1,45 +1,32 @@
-/**
- * PDR-4.1 §56-58: Verification Provider Registry Initialization
- * Registers all verification providers and initializes the provider registry.
- * Called once at application startup.
- */
-
-import { providerRegistry } from "../provider-interface";
-import { SelfReportProvider } from "./self-report-provider";
-import { FocusTimerProvider } from "./focus-timer-provider";
-import { PushupPoseProvider } from "./pushup-pose-provider";
-import { SquatPoseProvider } from "./squat-pose-provider";
-import { LungePoseProvider } from "./lunge-pose-provider";
-import { TimerProvider } from "./timer-provider";
-import { PhotoEvidenceProvider } from "./photo-evidence-provider";
-import { ExternalEvidenceProvider } from "./external-evidence-provider";
+import { registerOCRProvider } from "./ocr-provider";
+import { registerPhotoProvider } from "./photo-provider";
+import { registerObjectProvider } from "./object-provider";
+import { registerSceneProvider } from "./scene-provider";
+import { registerVideoProvider } from "./video-provider";
+import { registerDocumentProvider } from "./document-provider";
+import { registerPoseProvider } from "./pose-provider";
+import { globalProviderRegistry } from "../provider-registry";
 
 let initialized = false;
 
-/**
- * Register all PDR-4 verification providers.
- * Safe to call multiple times (idempotent).
- */
-export function initializeVerificationProviders(): void {
+export function initializeProviders(): void {
   if (initialized) return;
 
-  providerRegistry.register(new SelfReportProvider());
-  providerRegistry.register(new FocusTimerProvider());
-  providerRegistry.register(new PushupPoseProvider());
-  providerRegistry.register(new SquatPoseProvider());
-  providerRegistry.register(new LungePoseProvider());
-  providerRegistry.register(new TimerProvider());
-  providerRegistry.register(new PhotoEvidenceProvider());
-  providerRegistry.register(new ExternalEvidenceProvider());
+  registerOCRProvider();
+  registerPhotoProvider();
+  registerObjectProvider();
+  registerSceneProvider();
+  registerVideoProvider();
+  registerDocumentProvider();
+  registerPoseProvider();
 
   initialized = true;
-  console.log("[VerificationProviders] Registered 8 providers:", providerRegistry.getAll().map((p) => p.name));
+
+  console.log(
+    `[Verification] Initialized ${globalProviderRegistry.listAll().length} providers`
+  );
 }
 
-/**
- * Get the provider registry (ensures initialization).
- */
-export function getProviderRegistry() {
-  initializeVerificationProviders();
-  return providerRegistry;
+export function getProviderCount(): number {
+  return globalProviderRegistry.listAll().length;
 }

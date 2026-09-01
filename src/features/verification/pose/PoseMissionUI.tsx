@@ -79,6 +79,7 @@ export function PoseMissionUI({ mission, onComplete, onCancel }: Props) {
   const [issue, setIssue] = useState<CameraIssue>(null);
   const [elapsed, setElapsed] = useState(0);
   const [prepError, setPrepError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const setPhaseSafe = useCallback((next: Phase) => {
     phaseRef.current = next;
@@ -139,7 +140,14 @@ export function PoseMissionUI({ mission, onComplete, onCancel }: Props) {
       } catch (err) {
         console.error("[PoseMissionUI] Model load failed:", err);
         if (!cancelled) {
-          setPrepError("Pose tracking model failed to load. Make sure you have a stable internet connection and try again.");
+          const errMsg = err instanceof Error ? err.message : String(err);
+          if (errMsg.includes("timed out")) {
+            setPrepError("Model download timed out. Check your connection speed and try again.");
+          } else if (errMsg.includes("Failed to fetch") || errMsg.includes("network")) {
+            setPrepError("Network error loading pose model. Switch to a faster connection and retry.");
+          } else {
+            setPrepError("Pose tracking model failed to load. Try again or switch to a different network.");
+          }
         }
         return;
       }
@@ -207,7 +215,7 @@ export function PoseMissionUI({ mission, onComplete, onCancel }: Props) {
       sessionRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mission.id]);
+  }, [mission.id, retryCount]);
 
   const calibrationSamplesRef = useRef(0);
   const CALIBRATION_FRAMES_NEEDED = 18; // ~1.5s of stable person visibility
@@ -330,9 +338,20 @@ export function PoseMissionUI({ mission, onComplete, onCancel }: Props) {
               <>
                 <AlertCircle className="w-8 h-8 text-[#FF9500] mb-3" />
                 <p className="text-white text-[13px] font-medium mb-4">{prepError}</p>
-                <button onClick={onCancel} className="px-5 py-2.5 rounded-full bg-white/15 text-white text-[13px] font-bold">
-                  BACK
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setPrepError(null);
+                      setRetryCount((c) => c + 1);
+                    }}
+                    className="px-5 py-2.5 rounded-full bg-[#FF9500] text-white text-[13px] font-bold"
+                  >
+                    RETRY
+                  </button>
+                  <button onClick={onCancel} className="px-5 py-2.5 rounded-full bg-white/15 text-white text-[13px] font-bold">
+                    BACK
+                  </button>
+                </div>
               </>
             ) : (
               <>

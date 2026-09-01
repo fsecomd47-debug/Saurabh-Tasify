@@ -138,18 +138,17 @@ export function ItemDetail({
 
       {/* Item Hero */}
       <div
-        className="relative h-[300px] flex items-center justify-center"
+        className="relative h-[300px] flex items-center justify-center overflow-hidden"
         style={{
-          backgroundColor: `${rarityColor}20`,
+          background: "linear-gradient(180deg, #FAFAFA 0%, #F2F2F7 100%)",
         }}
       >
         {/* Rarity badge */}
         <div
-          className="absolute top-4 left-4 px-3 py-1 rounded-full text-[11px] font-bold uppercase"
+          className="absolute top-4 left-4 px-3 py-1 rounded-full text-[11px] font-bold uppercase bg-white/90 backdrop-blur-sm"
           style={{
-            backgroundColor: `${rarityColor}20`,
             color: rarityColor,
-            border: `1px solid ${rarityColor}`,
+            border: `1.5px solid ${rarityColor}`,
           }}
         >
           {item.rarity}
@@ -167,7 +166,7 @@ export function ItemDetail({
           <img
             src={item.previewAsset}
             alt={item.name}
-            className="w-32 h-32 rounded-[24px] object-cover"
+            className="w-40 h-40 object-contain drop-shadow-lg"
             onError={() => setImgError(true)}
           />
         ) : (
