@@ -1,5 +1,5 @@
 import "server-only";
-import { eq, and, sql, desc, inArray } from "drizzle-orm";
+import { eq, and, sql, desc, inArray, not, or } from "drizzle-orm";
 import { db } from "@/db";
 import {
   socialFeedEvents,
@@ -97,7 +97,7 @@ export async function getSocialFeed(
   if (excludeIds.length > 0) {
     whereClause = and(
       whereClause,
-      sql`${socialFeedEvents.actorId} != all(${excludeIds})`
+      not(inArray(socialFeedEvents.actorId, excludeIds))
     )!;
   }
   // "friends" visibility only visible to friends (including self)
@@ -105,7 +105,10 @@ export async function getSocialFeed(
   if (friendIdArr.length > 0) {
     whereClause = and(
       whereClause,
-      sql`(${socialFeedEvents.visibility} = 'public' OR ${socialFeedEvents.actorId} = any(${friendIdArr}))`
+      or(
+        eq(socialFeedEvents.visibility, 'public'),
+        inArray(socialFeedEvents.actorId, friendIdArr)
+      )!
     )!;
   } else {
     whereClause = and(

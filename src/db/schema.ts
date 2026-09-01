@@ -1168,9 +1168,7 @@ export const vaultOwnership = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    itemId: uuid("item_id")
-      .notNull()
-      .references(() => vaultItems.id, { onDelete: "cascade" }),
+    itemId: text("item_id").notNull(),
     quantity: integer("quantity").notNull().default(1),
     equipped: boolean("equipped").notNull().default(false),
     favorite: boolean("favorite").notNull().default(false),
@@ -1190,12 +1188,12 @@ export const vaultEquipment = pgTable(
     userId: uuid("user_id")
       .primaryKey()
       .references(() => users.id, { onDelete: "cascade" }),
-    activePet: uuid("active_pet").references(() => vaultItems.id),
-    activeVehicle: uuid("active_vehicle").references(() => vaultItems.id),
-    profileFrame: uuid("profile_frame").references(() => vaultItems.id),
-    profileTitle: uuid("profile_title").references(() => vaultItems.id),
-    profileBadge: uuid("profile_badge").references(() => vaultItems.id),
-    theme: uuid("theme").references(() => vaultItems.id),
+    activePet: text("active_pet"),
+    activeVehicle: text("active_vehicle"),
+    profileFrame: text("profile_frame"),
+    profileTitle: text("profile_title"),
+    profileBadge: text("profile_badge"),
+    theme: text("theme"),
     showcaseItems: jsonb("showcase_items").$type<string[]>().notNull().default([]),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -1211,9 +1209,7 @@ export const vaultTransactions = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    itemId: uuid("item_id")
-      .notNull()
-      .references(() => vaultItems.id, { onDelete: "cascade" }),
+    itemId: text("item_id").notNull(),
     price: integer("price").notNull(),
     operationKey: text("operation_key").notNull(),
     purchasedAt: timestamp("purchased_at", { withTimezone: true }).notNull().defaultNow(),
@@ -1232,9 +1228,7 @@ export const vaultWishlist = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    itemId: uuid("item_id")
-      .notNull()
-      .references(() => vaultItems.id, { onDelete: "cascade" }),
+    itemId: text("item_id").notNull(),
     addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -1249,9 +1243,7 @@ export const vaultGoals = pgTable(
     userId: uuid("user_id")
       .primaryKey()
       .references(() => users.id, { onDelete: "cascade" }),
-    itemId: uuid("item_id")
-      .notNull()
-      .references(() => vaultItems.id, { onDelete: "cascade" }),
+    itemId: text("item_id").notNull(),
     setAt: timestamp("set_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
