@@ -65,6 +65,7 @@ export function ItemDetail({
   const [showConfirm, setShowConfirm] = useState(false);
   const [purchased, setPurchased] = useState(false);
   const [equipping, setEquipping] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const canAfford = userBalance >= item.price;
   const rarityColor = RARITY_COLORS[item.rarity];
@@ -162,32 +163,41 @@ export function ItemDetail({
         )}
 
         {/* Item visual */}
-        <div
-          className="w-32 h-32 rounded-[24px] flex items-center justify-center text-[64px]"
-          style={{
-            backgroundColor: `${rarityColor}30`,
-          }}
-        >
-          {item.type === "pet"
-            ? "🐾"
-            : item.type === "car"
-            ? "🚗"
-            : item.type === "superbike"
-            ? "🏍"
-            : item.type === "frame"
-            ? "🖼"
-            : item.type === "title"
-            ? "📝"
-            : item.type === "badge"
-            ? "🏅"
-            : item.type === "boost"
-            ? "⚡"
-            : item.type === "theme"
-            ? "🎨"
-            : item.type === "accessory"
-            ? "✨"
-            : "📦"}
-        </div>
+        {item.previewAsset && !imgError ? (
+          <img
+            src={item.previewAsset}
+            alt={item.name}
+            className="w-32 h-32 rounded-[24px] object-cover"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div
+            className="w-32 h-32 rounded-[24px] flex items-center justify-center text-[64px]"
+            style={{
+              backgroundColor: `${rarityColor}30`,
+            }}
+          >
+            {item.type === "pet"
+              ? "🐾"
+              : item.type === "car"
+              ? "🚗"
+              : item.type === "superbike"
+              ? "🏍"
+              : item.type === "frame"
+              ? "🖼"
+              : item.type === "title"
+              ? "📝"
+              : item.type === "badge"
+              ? "🏅"
+              : item.type === "boost"
+              ? "⚡"
+              : item.type === "theme"
+              ? "🎨"
+              : item.type === "accessory"
+              ? "✨"
+              : "📦"}
+          </div>
+        )}
       </div>
 
       {/* Content */}

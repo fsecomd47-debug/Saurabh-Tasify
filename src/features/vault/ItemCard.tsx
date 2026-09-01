@@ -12,7 +12,7 @@
  * - EQUIPPED
  */
 
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Lock, Check, ShoppingCart, Heart } from "lucide-react";
 import type { VaultItem } from "@/types/vault";
@@ -59,6 +59,7 @@ export function ItemCard({
   const canAfford = userBalance >= item.price;
   const isNearGoal = !canAfford && item.price - userBalance <= 1000;
   const rarityColor = RARITY_COLORS[item.rarity];
+  const [imgError, setImgError] = useState(false);
 
   const getStateLabel = () => {
     if (equipped) return "EQUIPPED";
@@ -136,34 +137,43 @@ export function ItemCard({
           </div>
         )}
 
-        {/* Item visual placeholder */}
-        <div
-          className="w-16 h-16 rounded-[12px] flex items-center justify-center text-[24px]"
-          style={{
-            backgroundColor: `${rarityColor.text}20`,
-            color: rarityColor.text,
-          }}
-        >
-          {item.type === "pet"
-            ? "🐾"
-            : item.type === "car"
-            ? "🚗"
-            : item.type === "superbike"
-            ? "🏍"
-            : item.type === "frame"
-            ? "🖼"
-            : item.type === "title"
-            ? "📝"
-            : item.type === "badge"
-            ? "🏅"
-            : item.type === "boost"
-            ? "⚡"
-            : item.type === "theme"
-            ? "🎨"
-            : item.type === "accessory"
-            ? "✨"
-            : "📦"}
-        </div>
+        {/* Item visual */}
+        {item.previewAsset && !imgError ? (
+          <img
+            src={item.previewAsset}
+            alt={item.name}
+            className="w-full h-full object-cover"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div
+            className="w-16 h-16 rounded-[12px] flex items-center justify-center text-[24px]"
+            style={{
+              backgroundColor: `${rarityColor.text}20`,
+              color: rarityColor.text,
+            }}
+          >
+            {item.type === "pet"
+              ? "🐾"
+              : item.type === "car"
+              ? "🚗"
+              : item.type === "superbike"
+              ? "🏍"
+              : item.type === "frame"
+              ? "🖼"
+              : item.type === "title"
+              ? "📝"
+              : item.type === "badge"
+              ? "🏅"
+              : item.type === "boost"
+              ? "⚡"
+              : item.type === "theme"
+              ? "🎨"
+              : item.type === "accessory"
+              ? "✨"
+              : "📦"}
+          </div>
+        )}
       </div>
 
       {/* Content */}

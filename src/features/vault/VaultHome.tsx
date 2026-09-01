@@ -420,15 +420,15 @@ export function VaultHome({
         {/* Category tabs (only in browse) */}
         {viewTab === "browse" && (
           <div className="px-4 pb-3">
-            <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            <div className="flex flex-wrap gap-2 justify-center">
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`px-4 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap transition-colors ${
+                  className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap transition-all min-w-0 ${
                     activeCategory === cat.id
-                      ? "bg-[#1C1C1E] text-white"
-                      : "bg-white text-[#636366] border border-[#E5E5EA]"
+                      ? "bg-[#1C1C1E] text-white shadow-md"
+                      : "bg-white text-[#636366] border border-[#E5E5EA] active:bg-[#F2F2F7]"
                   }`}
                 >
                   {cat.label}

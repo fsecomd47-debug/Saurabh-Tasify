@@ -334,7 +334,7 @@ export async function processQuestEvent(
       and(
         eq(activityEvents.userId, userId),
         eq(activityEvents.type, dedupeType),
-        sql`${activityEvents.createdAt} > ${dedupeWindow.toISOString()}`
+        sql`${activityEvents.createdAt} > to_timestamp(${Math.floor(dedupeWindow.getTime() / 1000)}::double precision)`
       )
     )
     .limit(1);

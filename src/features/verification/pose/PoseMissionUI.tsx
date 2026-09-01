@@ -136,9 +136,10 @@ export function PoseMissionUI({ mission, onComplete, onCancel }: Props) {
         });
         runtimeRef.current = runtime;
         await runtime.ensureModel();
-      } catch {
+      } catch (err) {
+        console.error("[PoseMissionUI] Model load failed:", err);
         if (!cancelled) {
-          setPrepError("This verification mode isn't available right now. Please try again.");
+          setPrepError("Pose tracking model failed to load. Make sure you have a stable internet connection and try again.");
         }
         return;
       }

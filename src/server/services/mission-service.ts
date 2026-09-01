@@ -185,7 +185,7 @@ export async function createMission(taskId: string, userId: string): Promise<Mis
     .from(missions)
     .where(and(
       eq(missions.userId, userId),
-      sql`${missions.createdAt} >= ${todayStart.toISOString()}`
+      sql`${missions.createdAt} >= to_timestamp(${Math.floor(todayStart.getTime() / 1000)}::double precision)`
     ));
   if ((todayCount[0]?.count ?? 0) >= 20) {
     throw new AppError("RATE_LIMITED", "Daily mission limit reached (20/day). Try again tomorrow.");

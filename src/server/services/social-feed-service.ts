@@ -101,14 +101,22 @@ export async function getSocialFeed(
     )!;
   }
   // "friends" visibility only visible to friends (including self)
-  whereClause = and(
-    whereClause,
-    sql`(${socialFeedEvents.visibility} = 'public' OR ${socialFeedEvents.actorId} = any(${[...friendIds]}))`
-  )!;
+  const friendIdArr = [...friendIds];
+  if (friendIdArr.length > 0) {
+    whereClause = and(
+      whereClause,
+      sql`(${socialFeedEvents.visibility} = 'public' OR ${socialFeedEvents.actorId} = any(${friendIdArr}))`
+    )!;
+  } else {
+    whereClause = and(
+      whereClause,
+      sql`${socialFeedEvents.visibility} = 'public'`
+    )!;
+  }
   if (cursor) {
     whereClause = and(
       whereClause,
-      sql`${socialFeedEvents.createdAt} < ${new Date(cursor)}`
+      sql`${socialFeedEvents.createdAt} < to_timestamp(${Math.floor(new Date(cursor).getTime() / 1000)}::double precision)`
     )!;
   }
 
@@ -144,7 +152,7 @@ export async function getSocialFeed(
             current: streaksTable.current,
           })
           .from(streaksTable)
-          .where(sql`${streaksTable.userId} = any(${actorIds})`)
+          .where(inArray(streaksTable.userId, actorIds))
       : [];
   const streakMap = new Map(streakRows.map((s) => [s.userId, s.current]));
 

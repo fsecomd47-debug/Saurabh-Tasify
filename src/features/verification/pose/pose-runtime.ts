@@ -23,6 +23,9 @@ const WASM_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wa
 const MODEL_URL =
   "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/pose_landmarker_lite.task";
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1500;
+
 export type PoseRuntimeStatus =
   | "unloaded"
   | "loading"
@@ -53,17 +56,32 @@ export async function loadPoseModel(): Promise<PoseLandmarker> {
   if (loadPromise) return loadPromise;
 
   loadPromise = (async () => {
-    const fileset = await FilesetResolver.forVisionTasks(WASM_BASE);
-    const landmarker = await PoseLandmarker.createFromOptions(fileset, {
-      baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
-      runningMode: "VIDEO",
-      numPoses: 1,
-      minPoseDetectionConfidence: 0.5,
-      minPosePresenceConfidence: 0.5,
-      minTrackingConfidence: 0.5,
-    });
-    cachedLandmarker = landmarker;
-    return landmarker;
+    let lastErr: unknown;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      for (const delegate of ["GPU", "CPU"] as const) {
+        try {
+          const fileset = await FilesetResolver.forVisionTasks(WASM_BASE);
+          const landmarker = await PoseLandmarker.createFromOptions(fileset, {
+            baseOptions: { modelAssetPath: MODEL_URL, delegate },
+            runningMode: "VIDEO",
+            numPoses: 1,
+            minPoseDetectionConfidence: 0.5,
+            minPosePresenceConfidence: 0.5,
+            minTrackingConfidence: 0.5,
+          });
+          cachedLandmarker = landmarker;
+          console.log(`[pose-runtime] Model loaded with ${delegate} delegate`);
+          return landmarker;
+        } catch (err) {
+          lastErr = err;
+          console.warn(`[pose-runtime] Model load attempt ${attempt}/${MAX_RETRIES} (${delegate}) failed:`, err);
+        }
+      }
+      if (attempt < MAX_RETRIES) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * attempt));
+      }
+    }
+    throw lastErr;
   })();
 
   try {

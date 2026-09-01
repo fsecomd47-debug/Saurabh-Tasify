@@ -156,7 +156,7 @@ export async function getProfileView(userId: string): Promise<ProfileView> {
       .where(
         and(
           eq(petMiningSettlements.userId, userId),
-          sql`${petMiningSettlements.createdAt} >= ${today.toISOString()}`
+          sql`${petMiningSettlements.createdAt} >= to_timestamp(${Math.floor(today.getTime() / 1000)}::double precision)`
         )
       );
 

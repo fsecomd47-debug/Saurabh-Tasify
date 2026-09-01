@@ -1,5 +1,5 @@
 import "server-only";
-import { eq, and, sql, or, desc } from "drizzle-orm";
+import { eq, and, sql, or, desc, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { socialMessages, profiles, blocks } from "@/db/schema";
 import { AppError } from "@/server/http";
@@ -163,7 +163,7 @@ export async function getConversations(
       avatarId: profiles.avatarId,
     })
     .from(profiles)
-    .where(sql`${profiles.userId} = any(${partnerIds})`);
+    .where(inArray(profiles.userId, partnerIds));
 
   for (const p of profiles_) {
     const conv = partnerMap.get(p.userId);
@@ -184,7 +184,7 @@ export async function getConversations(
           .from(socialMessages)
           .where(
             and(
-              sql`${socialMessages.senderId} = any(${partnerIds})`,
+              inArray(socialMessages.senderId, partnerIds),
               eq(socialMessages.receiverId, userId),
               eq(socialMessages.read, false)
             )
@@ -224,7 +224,7 @@ export async function getConversation(
   if (cursor) {
     whereClause = and(
       whereClause,
-      sql`${socialMessages.createdAt} < ${new Date(cursor)}`
+      sql`${socialMessages.createdAt} < to_timestamp(${Math.floor(new Date(cursor).getTime() / 1000)}::double precision)`
     )!;
   }
 
@@ -253,7 +253,7 @@ export async function getConversation(
       avatarId: profiles.avatarId,
     })
     .from(profiles)
-    .where(sql`${profiles.userId} = any(${senderIds})`);
+    .where(inArray(profiles.userId, senderIds));
 
   const profileMap = new Map(
     senderProfiles.map((p) => [p.userId, { name: p.displayName, avatar: avatarEmojiFor(p.avatarId) }])

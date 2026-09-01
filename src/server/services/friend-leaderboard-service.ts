@@ -1,5 +1,5 @@
 import "server-only";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   friendships,
@@ -61,9 +61,9 @@ export async function getFriendLeaderboard(
     .innerJoin(wallets, eq(wallets.id, walletTransactions.walletId))
     .where(
       and(
-        sql`${wallets.userId} = any(${allIds})`,
+        inArray(wallets.userId, allIds),
         eq(walletTransactions.type, "earning"),
-        sql`${walletTransactions.createdAt} >= ${wStart}`
+        sql`${walletTransactions.createdAt} >= to_timestamp(${Math.floor(wStart.getTime() / 1000)}::double precision)`
       )
     )
     .groupBy(walletTransactions.walletId);
@@ -72,7 +72,7 @@ export async function getFriendLeaderboard(
   const walletToUser = await db
     .select({ id: wallets.id, userId: wallets.userId })
     .from(wallets)
-    .where(sql`${wallets.userId} = any(${allIds})`);
+    .where(inArray(wallets.userId, allIds));
 
   const w2u = new Map(walletToUser.map((r) => [r.id, r.userId]));
   const earningsByUser = new Map<string, number>();
@@ -95,7 +95,7 @@ export async function getFriendLeaderboard(
     .from(profiles)
     .leftJoin(playerProgress, eq(playerProgress.userId, profiles.userId))
     .leftJoin(streaksTable, eq(streaksTable.userId, profiles.userId))
-    .where(sql`${profiles.userId} = any(${allIds})`);
+    .where(inArray(profiles.userId, allIds));
 
   const profileMap = new Map(profiles_.map((p) => [p.userId, p]));
 
